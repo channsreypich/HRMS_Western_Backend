@@ -1,4 +1,0 @@
-package hrd.com.hrms.dto.employee;
-
-public class EmployeeResponse {
-}

@@ -1,0 +1,7 @@
+package hrd.com.hrms.enums;
+
+public enum LeaveStatus {
+    PENDING,
+    APPROVED,
+    REJECTED
+}

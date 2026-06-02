@@ -1,4 +1,10 @@
 package hrd.com.hrms.repository;
 
-public class LeaveRepository {
+import hrd.com.hrms.model.Leave;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.UUID;
+
+@Repository
+public interface LeaveRepository extends JpaRepository<Leave, UUID> {
 }
