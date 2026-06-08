@@ -20,6 +20,7 @@ public class EmployeeMapper {
                 .departmentName(employee.getDepartment() != null ? employee.getDepartment().getName() : "N/A")
                 .positionTitle(employee.getPosition() != null ? employee.getPosition().getTitle() : "N/A")
                 .isActive(employee.getUser().isActive())
+                .documents(employee.getDocuments())
                 .build();
     }
 }

@@ -2,6 +2,8 @@ package hrd.com.hrms.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -45,4 +47,9 @@ public class Employee {
 
     @Column(name = "base_salary", precision = 10, scale = 2)
     private java.math.BigDecimal baseSalary;
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<EmployeeDocument> documents;
 }

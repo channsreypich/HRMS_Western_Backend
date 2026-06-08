@@ -21,4 +21,8 @@ public class Position {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "department_id")
     private Department department;
+
+//    public String getName() {
+//        return null;
+//    }
 }

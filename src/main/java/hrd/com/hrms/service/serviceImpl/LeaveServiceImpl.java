@@ -11,6 +11,7 @@ import hrd.com.hrms.model.Leave;
 import hrd.com.hrms.repository.EmployeeRepository;
 import hrd.com.hrms.repository.LeaveRepository;
 import hrd.com.hrms.service.LeaveService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,17 +20,12 @@ import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class LeaveServiceImpl implements LeaveService {
 
     private final LeaveRepository leaveRepository;
     private final EmployeeRepository employeeRepository;
     private final LeaveMapper leaveMapper;
-
-    public LeaveServiceImpl(LeaveRepository leaveRepository, EmployeeRepository employeeRepository, LeaveMapper leaveMapper) {
-        this.leaveRepository = leaveRepository;
-        this.employeeRepository = employeeRepository;
-        this.leaveMapper = leaveMapper;
-    }
 
     @Override
     public LeaveResponse createLeaveRequest(LeaveRequest request) {
@@ -37,11 +33,13 @@ public class LeaveServiceImpl implements LeaveService {
             throw new BadRequestException("End date cannot occur before start date.");
         }
 
+        // Entity Mapping
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Employee record not found."));
 
         Leave leave = Leave.builder()
                 .employee(employee)
+                .leaveType(request.getLeaveType())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .reason(request.getReason())

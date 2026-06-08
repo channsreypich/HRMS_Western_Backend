@@ -14,7 +14,6 @@ public class EmployeeRequest {
     @Size(min = 4, max = 50, message = "Username must be between 4 and 50 characters")
     private String username;
 
-    // Required on create, optional on update (leave blank to keep the current password)
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 

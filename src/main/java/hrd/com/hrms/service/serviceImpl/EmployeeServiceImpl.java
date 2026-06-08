@@ -2,13 +2,14 @@ package hrd.com.hrms.service.serviceImpl;
 
 import hrd.com.hrms.dto.request.EmployeeRequest;
 import hrd.com.hrms.dto.response.EmployeeResponse;
-import hrd.com.hrms.dto.response.EmployeeDetailResponse; // Added for screen synchronization
+import hrd.com.hrms.dto.response.EmployeeDetailResponse;
 import hrd.com.hrms.exception.BadRequestException;
 import hrd.com.hrms.exception.ResourceNotFoundException;
 import hrd.com.hrms.mapper.EmployeeMapper;
 import hrd.com.hrms.model.*;
 import hrd.com.hrms.repository.*;
 import hrd.com.hrms.service.EmployeeService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
@@ -27,19 +29,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final PositionRepository positionRepository;
     private final EmployeeMapper employeeMapper;
     private final PasswordEncoder passwordEncoder;
-
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, UserRepository userRepository,
-                               RoleRepository roleRepository, DepartmentRepository departmentRepository,
-                               PositionRepository positionRepository, EmployeeMapper employeeMapper,
-                               PasswordEncoder passwordEncoder) {
-        this.employeeRepository = employeeRepository;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.departmentRepository = departmentRepository;
-        this.positionRepository = positionRepository;
-        this.employeeMapper = employeeMapper;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private final EmployeeDocumentRepository documentRepository;
 
     @Override
     public EmployeeResponse createEmployee(EmployeeRequest request) {
@@ -72,7 +62,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .lastName(request.getLastName())
                 .department(dept)
                 .position(pos)
-                .phone(request.getPhone()) // Maps from view inputs
+                .phone(request.getPhone())
                 .status(request.getStatus() != null ? request.getStatus().toLowerCase() : "active")
                 .hireDate(request.getHireDate())
                 .baseSalary(request.getBaseSalary())
@@ -131,7 +121,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
     }
 
-    // ── Added Custom Profile Breakdown for EmployeeDetail.vue Layout ──
     @Override
     @Transactional(readOnly = true)
     public EmployeeDetailResponse getEmployeeDetailsById(UUID id) {
@@ -146,10 +135,10 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .status(employee.getStatus() != null ? employee.getStatus().toLowerCase() : "inactive")
                 .hireDate(employee.getHireDate())
                 .baseSalary(employee.getBaseSalary())
-                // Safe checks to avoid lazy loading/NPE crashes
                 .email(employee.getUser() != null ? employee.getUser().getEmail() : "N/A")
                 .departmentName(employee.getDepartment() != null ? employee.getDepartment().getName() : null)
-                .positionTitle(employee.getPosition() != null ? employee.getPosition().getName() : null)
+                // Use .getTitle() here if your Position entity uses 'title'
+                .positionTitle(employee.getPosition() != null ? employee.getPosition().getTitle() : null)
                 .build();
     }
 
@@ -158,5 +147,21 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee emp = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
         employeeRepository.delete(emp);
+    }
+
+    @Override
+    public void uploadDocument(UUID employeeId, EmployeeDocument document) {
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+        document.setEmployee(emp);
+        documentRepository.save(document);
+    }
+
+    @Override
+    public void deleteDocument(UUID documentId) {
+        if (!documentRepository.existsById(documentId)) {
+            throw new ResourceNotFoundException("Document not found");
+        }
+        documentRepository.deleteById(documentId);
     }
 }
