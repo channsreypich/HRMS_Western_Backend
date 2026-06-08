@@ -3,6 +3,7 @@ package hrd.com.hrms.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -31,15 +32,15 @@ public class Payroll {
     @Column(name = "payment_date")
     private LocalDate paymentDate;
 
-    @Column(name = "basic_salary", nullable = false)
-    private double basicSalary;
+    @Column(name = "basic_salary", nullable = false,precision = 19, scale = 2)
+    private BigDecimal basicSalary;
 
-    @Column(nullable = false)
-    private double allowances;
+    @Column(nullable = false,precision = 19, scale = 2)
+    private BigDecimal allowances;
 
-    @Column(nullable = false)
-    private double deductions;
+    @Column(nullable = false,precision = 19, scale = 2)
+    private BigDecimal deductions;
 
-    @Column(name = "net_pay", nullable = false)
-    private double netPay;
+    @Column(precision = 19, scale = 2)
+    private BigDecimal netPay;
 }

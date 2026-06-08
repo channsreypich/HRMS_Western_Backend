@@ -10,5 +10,5 @@ import java.util.UUID;
 @Repository
 public interface PayrollRepository extends JpaRepository<Payroll, UUID> {
     Page<Payroll> findByEmployeeId(UUID employeeId, Pageable pageable);
-    Page<Payroll> findByEmployeePositionDepartmentId(UUID departmentId, Pageable pageable);
+    Page<Payroll> findByEmployeeDepartmentId(UUID departmentId, Pageable pageable);
 }

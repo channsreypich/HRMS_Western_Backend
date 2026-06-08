@@ -22,7 +22,4 @@ public class Position {
     @JoinColumn(name = "department_id")
     private Department department;
 
-//    public String getName() {
-//        return null;
-//    }
 }

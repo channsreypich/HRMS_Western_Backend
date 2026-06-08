@@ -2,6 +2,7 @@ package hrd.com.hrms.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -12,8 +13,8 @@ public class PayrollResponse {
     private UUID employeeId;
     private String employeeName;
     private LocalDate paymentDate;
-    private double basicSalary;
-    private double allowances;
-    private double deductions;
-    private double netPay;
+    private BigDecimal basicSalary;
+    private BigDecimal allowances;
+    private BigDecimal deductions;
+    private BigDecimal netPay;
 }

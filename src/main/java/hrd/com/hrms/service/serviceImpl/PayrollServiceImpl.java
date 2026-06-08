@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -33,18 +34,23 @@ public class PayrollServiceImpl implements PayrollService {
     @Override
     public PayrollResponse calculateAndSavePayroll(PayrollRequest request) {
         Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Target employee profile for payroll calculation not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found."));
 
-        // Net Pay formula computation
-        double calculatedNetPay = (request.getBasicSalary() + request.getAllowances()) - request.getDeductions();
+        // Convert request values to BigDecimal for accurate financial calculation
+        BigDecimal basic = BigDecimal.valueOf(request.getBasicSalary());
+        BigDecimal allow = BigDecimal.valueOf(request.getAllowances());
+        BigDecimal deduc = BigDecimal.valueOf(request.getDeductions());
+
+        // Net Pay = (Basic + Allowances) - Deductions
+        BigDecimal netPay = basic.add(allow).subtract(deduc);
 
         Payroll payroll = Payroll.builder()
                 .employee(employee)
                 .paymentDate(LocalDate.now())
-                .basicSalary(request.getBasicSalary())
-                .allowances(request.getAllowances())
-                .deductions(request.getDeductions())
-                .netPay(calculatedNetPay)
+                .basicSalary(basic)
+                .allowances(allow)
+                .deductions(deduc)
+                .netPay(netPay)
                 .build();
 
         return payrollMapper.toResponse(payrollRepository.save(payroll));
@@ -54,7 +60,7 @@ public class PayrollServiceImpl implements PayrollService {
     public PayrollResponse getPayrollById(UUID id) {
         return payrollRepository.findById(id)
                 .map(payrollMapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found."));
     }
 
     @Override
@@ -70,7 +76,7 @@ public class PayrollServiceImpl implements PayrollService {
     @Override
     public void deletePayroll(UUID id) {
         Payroll payroll = payrollRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found."));
         payrollRepository.delete(payroll);
     }
 }

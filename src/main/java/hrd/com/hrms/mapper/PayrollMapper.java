@@ -9,10 +9,9 @@ public class PayrollMapper {
     public PayrollResponse toResponse(Payroll payroll) {
         if (payroll == null) return null;
 
-        String fullName = "Unknown Employee";
-        if (payroll.getEmployee() != null) {
-            fullName = payroll.getEmployee().getFirstName() + " " + payroll.getEmployee().getLastName();
-        }
+        String fullName = (payroll.getEmployee() != null)
+                ? payroll.getEmployee().getFirstName() + " " + payroll.getEmployee().getLastName()
+                : "Unknown Employee";
 
         return PayrollResponse.builder()
                 .id(payroll.getId())
