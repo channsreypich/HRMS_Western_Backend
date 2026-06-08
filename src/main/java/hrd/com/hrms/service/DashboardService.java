@@ -1,7 +1,7 @@
 package hrd.com.hrms.service;
 
-import java.util.Map;
+import hrd.com.hrms.dto.response.DashboardMetricsResponse;
 
 public interface DashboardService {
-    Map<String, Object> getMetricsSummary();
+    DashboardMetricsResponse getSummaryMetrics();
 }
