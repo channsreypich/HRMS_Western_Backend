@@ -3,62 +3,77 @@ package hrd.com.hrms.service.serviceImpl;
 import hrd.com.hrms.dto.request.DepartmentRequest;
 import hrd.com.hrms.dto.response.DepartmentResponse;
 import hrd.com.hrms.exception.ResourceNotFoundException;
-import hrd.com.hrms.mapper.DepartmentMapper;
 import hrd.com.hrms.model.Department;
 import hrd.com.hrms.repository.DepartmentRepository;
 import hrd.com.hrms.service.DepartmentService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 import java.util.UUID;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
-    private final DepartmentMapper departmentMapper;
 
-    public DepartmentServiceImpl(DepartmentRepository departmentRepository, DepartmentMapper departmentMapper) {
-        this.departmentRepository = departmentRepository;
-        this.departmentMapper = departmentMapper;
+    @Override
+    @Transactional(readOnly = true)
+    public List<DepartmentResponse> getAllDepartments() {
+        return departmentRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     @Override
+    @Transactional
     public DepartmentResponse createDepartment(DepartmentRequest request) {
+        if (departmentRepository.existsByCode(request.getCode())) {
+            throw new IllegalArgumentException("Department code already exists: " + request.getCode());
+        }
+
         Department department = Department.builder()
-                .code(request.getCode())
                 .name(request.getName())
+                .code(request.getCode().toUpperCase())
+                .color(request.getColor() != null ? request.getColor() : "#6823ff")
                 .build();
-        return departmentMapper.toResponse(departmentRepository.save(department));
+
+        return mapToResponse(departmentRepository.save(department));
     }
 
     @Override
+    @Transactional
     public DepartmentResponse updateDepartment(UUID id, DepartmentRequest request) {
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-        department.setCode(request.getCode());
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + id));
+
         department.setName(request.getName());
-        return departmentMapper.toResponse(departmentRepository.save(department));
+        department.setCode(request.getCode().toUpperCase());
+        if (request.getColor() != null) {
+            department.setColor(request.getColor());
+        }
+
+        return mapToResponse(departmentRepository.save(department));
     }
 
     @Override
-    public Page<DepartmentResponse> getAllDepartments(Pageable pageable) {
-        return departmentRepository.findAll(pageable).map(departmentMapper::toResponse);
-    }
-
-    @Override
-    public DepartmentResponse getDepartmentById(UUID id) {
-        return departmentRepository.findById(id)
-                .map(departmentMapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-    }
-
-    @Override
+    @Transactional
     public void deleteDepartment(UUID id) {
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-        departmentRepository.delete(department);
+        if (!departmentRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Department not found with ID: " + id);
+        }
+        departmentRepository.deleteById(id);
+    }
+
+    private DepartmentResponse mapToResponse(Department dept) {
+        return DepartmentResponse.builder()
+                .id(dept.getId())
+                .name(dept.getName())
+                .code(dept.getCode())
+                .color(dept.getColor())
+                .createdAt(dept.getCreatedAt())
+                .build();
     }
 }
