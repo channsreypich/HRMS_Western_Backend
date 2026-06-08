@@ -39,6 +39,7 @@ public class PositionServiceImpl implements PositionService {
 
         Position position = Position.builder()
                 .title(request.getTitle())
+                .baseSalary(request.getBaseSalary())
                 .department(department)
                 .build();
         return positionMapper.toResponse(positionRepository.save(position));
