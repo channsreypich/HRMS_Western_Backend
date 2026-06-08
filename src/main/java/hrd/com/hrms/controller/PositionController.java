@@ -4,49 +4,54 @@ import hrd.com.hrms.common.ApiResponse;
 import hrd.com.hrms.dto.request.PositionRequest;
 import hrd.com.hrms.dto.response.PositionResponse;
 import hrd.com.hrms.service.PositionService;
-import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/positions")
-@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class PositionController {
 
     private final PositionService positionService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<PositionResponse>> createPosition(@Valid @RequestBody PositionRequest request) {
-        PositionResponse response = positionService.createPosition(request);
-        return new ResponseEntity<>(new ApiResponse<>("Position created successfully", response, true, java.time.LocalDateTime.now()), HttpStatus.CREATED);
+    public PositionController(PositionService positionService) {
+        this.positionService = positionService;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PositionResponse>> getPositionById(@PathVariable UUID id) {
-        PositionResponse response = positionService.getPositionById(id);
-        return ResponseEntity.ok(new ApiResponse<>("Position fetched successfully", response, true, java.time.LocalDateTime.now()));
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<PositionResponse>> create(@Valid @RequestBody PositionRequest request) {
+        PositionResponse response = positionService.createPosition(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(HttpStatus.CREATED.value(), "Position added successfully", response));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<PositionResponse>>> getAllPositions() {
-        List<PositionResponse> response = positionService.getAllPositions();
-        return ResponseEntity.ok(new ApiResponse<>("All positions fetched successfully", response, true, java.time.LocalDateTime.now()));
+    public ResponseEntity<ApiResponse<Page<PositionResponse>>> getAll(Pageable pageable) {
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Positions loaded successfully", positionService.getAllPositions(pageable)));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<PositionResponse>> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Position found", positionService.getPositionById(id)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<PositionResponse>> updatePosition(@PathVariable UUID id, @Valid @RequestBody PositionRequest request) {
-        PositionResponse response = positionService.updatePosition(id, request);
-        return ResponseEntity.ok(new ApiResponse<>("Position updated successfully", response, true, java.time.LocalDateTime.now()));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<PositionResponse>> update(@PathVariable UUID id, @Valid @RequestBody PositionRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Position updated successfully", positionService.updatePosition(id, request)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deletePosition(@PathVariable UUID id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         positionService.deletePosition(id);
-        return ResponseEntity.ok(new ApiResponse<>("Position deleted successfully", null, true, java.time.LocalDateTime.now()));
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Position removed successfully", null));
     }
 }

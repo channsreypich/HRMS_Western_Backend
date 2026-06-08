@@ -1,13 +1,14 @@
 package hrd.com.hrms.model;
 
+import hrd.com.hrms.enums.AttendanceStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "attendance")
+@Table(name = "attendances")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,40 +17,21 @@ public class Attendance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(columnDefinition = "UUID", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
-    @Column(name = "clock_in", nullable = false)
-    private LocalDateTime clockIn;
+    @Column(nullable = false)
+    private LocalDate date;
 
-    @Column(name = "clock_out")
-    private LocalDateTime clockOut;
+    private LocalDateTime checkIn;
+    private LocalDateTime checkOut;
 
-    @Column(nullable = false, length = 30)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AttendanceStatus status;
 
-    public void setEmployeeId(@NotNull(message = "Employee ID is required") UUID employeeId) {
-    }
-
-    public void setClockInTime(LocalDateTime now) {
-    }
-
-    public void setClockOutTime(LocalDateTime now) {
-    }
-
-    public UUID getEmployeeId() {
-        return null;
-    }
-
-    public Object getClockInTime() {
-        return null;
-    }
-
-    public Object getClockOutTime() {
-        return null;
-    }
+    private String scanType;
 }

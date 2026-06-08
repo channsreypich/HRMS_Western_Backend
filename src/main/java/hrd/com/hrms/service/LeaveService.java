@@ -2,22 +2,17 @@ package hrd.com.hrms.service;
 
 import hrd.com.hrms.dto.request.LeaveRequest;
 import hrd.com.hrms.dto.response.LeaveResponse;
-import jakarta.validation.Valid;
-import org.apache.ibatis.annotations.Mapper;
-
-import java.util.List;
+import hrd.com.hrms.enums.LeaveStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
-@Mapper
 public interface LeaveService {
-    LeaveResponse requestLeave(LeaveRequest request);
-    LeaveResponse updateLeaveStatus(UUID id, String status);
-    List<LeaveResponse> getEmployeeLeaveHistory(UUID employeeId);
-    List<LeaveResponse> getPendingLeaveRequests();
-
-    LeaveResponse applyLeave(@Valid LeaveRequest request);
-
-    LeaveResponse updateStatus(UUID id, String status);
-
-    List<LeaveResponse> getAllLeaveRequests();
+    LeaveResponse createLeaveRequest(LeaveRequest request);
+    LeaveResponse updateLeaveStatus(UUID id, LeaveStatus status);
+    LeaveResponse getLeaveById(UUID id);
+    Page<LeaveResponse> getAllLeaveRequests(Pageable pageable);
+    Page<LeaveResponse> getLeavesByStatus(LeaveStatus status, Pageable pageable);
+    Page<LeaveResponse> getEmployeeLeaveHistory(UUID employeeId, Pageable pageable);
+    void deleteLeave(UUID id);
 }

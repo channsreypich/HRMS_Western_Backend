@@ -1,21 +1,21 @@
 package hrd.com.hrms.dto.request;
 
-import lombok.Data;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import lombok.Data;
 import java.util.UUID;
 
 @Data
 public class PayrollRequest {
-    @NotNull(message = "Employee matching target identifier required")
+    @NotNull(message = "Employee ID cannot be empty")
     private UUID employeeId;
-    @NotNull(message = "Period context missing")
-    private LocalDate payPeriodStart;
-    @NotNull(message = "Period timeline edge missing")
-    private LocalDate payPeriodEnd;
-    @NotNull(message = "Base wage context calculation scale constraint required")
-    private BigDecimal basicSalary;
-    private BigDecimal allowances;
-    private BigDecimal deductions;
+
+    @Min(value = 0, message = "Basic salary must be greater than or equal to 0")
+    private double basicSalary;
+
+    @Min(value = 0, message = "Allowances must be greater than or equal to 0")
+    private double allowances;
+
+    @Min(value = 0, message = "Deductions must be greater than or equal to 0")
+    private double deductions;
 }

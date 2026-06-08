@@ -2,56 +2,75 @@ package hrd.com.hrms.service.serviceImpl;
 
 import hrd.com.hrms.dto.request.PayrollRequest;
 import hrd.com.hrms.dto.response.PayrollResponse;
+import hrd.com.hrms.exception.ResourceNotFoundException;
+import hrd.com.hrms.mapper.PayrollMapper;
+import hrd.com.hrms.model.Employee;
 import hrd.com.hrms.model.Payroll;
+import hrd.com.hrms.repository.EmployeeRepository;
 import hrd.com.hrms.repository.PayrollRepository;
 import hrd.com.hrms.service.PayrollService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import java.math.BigDecimal;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class PayrollServiceImpl implements PayrollService {
+
     private final PayrollRepository payrollRepository;
+    private final EmployeeRepository employeeRepository;
+    private final PayrollMapper payrollMapper;
 
-    @Override
-    public PayrollResponse processPayroll(PayrollRequest request) {
-        BigDecimal allowances = request.getAllowances() != null ? request.getAllowances() : BigDecimal.ZERO;
-        BigDecimal deductions = request.getDeductions() != null ? request.getDeductions() : BigDecimal.ZERO;
-
-        // Functional Net Calculation Implementation Logic: Net = Basic + Allowances - Deductions
-        BigDecimal netPay = request.getBasicSalary().add(allowances).subtract(deductions);
-
-        Payroll payroll = new Payroll();
-        payroll.setId(UUID.randomUUID());
-        payroll.setEmployeeId(request.getEmployeeId());
-        payroll.setPayPeriodStart(request.getPayPeriodStart());
-        payroll.setPayPeriodEnd(request.getPayPeriodEnd());
-        payroll.setBasicSalary(request.getBasicSalary());
-        payroll.setAllowances(allowances);
-        payroll.setDeductions(deductions);
-        payroll.setNetPay(netPay);
-        payroll.setPaymentDate(LocalDate.now()); // Set current systemic date timestamp
-
-        return mapToResponse(payrollRepository.save(payroll));
+    public PayrollServiceImpl(PayrollRepository payrollRepository, EmployeeRepository employeeRepository, PayrollMapper payrollMapper) {
+        this.payrollRepository = payrollRepository;
+        this.employeeRepository = employeeRepository;
+        this.payrollMapper = payrollMapper;
     }
 
-    @Override public List<PayrollResponse> getPayrollHistoryByEmployee(UUID id) { return List.of(); }
+    @Override
+    public PayrollResponse calculateAndSavePayroll(PayrollRequest request) {
+        Employee employee = employeeRepository.findById(request.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Target employee profile for payroll calculation not found."));
 
-    private PayrollResponse mapToResponse(Payroll entity) {
-        PayrollResponse res = new PayrollResponse();
-        res.setId(entity.getId());
-        res.setEmployeeId(entity.getEmployeeId());
-        res.setPayPeriodStart(entity.getPayPeriodStart());
-        res.setPayPeriodEnd(entity.getPayPeriodEnd());
-        res.setBasicSalary(entity.getBasicSalary());
-        res.setAllowances(entity.getAllowances());
-        res.setDeductions(entity.getDeductions());
-        res.setNetPay(entity.getNetPay());
-        res.setPaymentDate(entity.getPaymentDate());
-        return res;
+        // Net Pay formula computation
+        double calculatedNetPay = (request.getBasicSalary() + request.getAllowances()) - request.getDeductions();
+
+        Payroll payroll = Payroll.builder()
+                .employee(employee)
+                .paymentDate(LocalDate.now())
+                .basicSalary(request.getBasicSalary())
+                .allowances(request.getAllowances())
+                .deductions(request.getDeductions())
+                .netPay(calculatedNetPay)
+                .build();
+
+        return payrollMapper.toResponse(payrollRepository.save(payroll));
+    }
+
+    @Override
+    public PayrollResponse getPayrollById(UUID id) {
+        return payrollRepository.findById(id)
+                .map(payrollMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found with id: " + id));
+    }
+
+    @Override
+    public Page<PayrollResponse> getEmployeePayrollHistory(UUID employeeId, Pageable pageable) {
+        return payrollRepository.findByEmployeeId(employeeId, pageable).map(payrollMapper::toResponse);
+    }
+
+    @Override
+    public Page<PayrollResponse> getAllPayrollRecords(Pageable pageable) {
+        return payrollRepository.findAll(pageable).map(payrollMapper::toResponse);
+    }
+
+    @Override
+    public void deletePayroll(UUID id) {
+        Payroll payroll = payrollRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found with id: " + id));
+        payrollRepository.delete(payroll);
     }
 }

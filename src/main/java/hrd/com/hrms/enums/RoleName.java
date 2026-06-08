@@ -1,7 +1,7 @@
 package hrd.com.hrms.enums;
 
 public enum RoleName {
-    ADMIN,
-    HR,
-    EMPLOYEE
+    ROLE_ADMIN,
+    ROLE_HR,
+    ROLE_EMPLOYEE
 }

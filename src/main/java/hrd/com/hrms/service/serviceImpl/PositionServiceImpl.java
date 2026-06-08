@@ -2,78 +2,81 @@ package hrd.com.hrms.service.serviceImpl;
 
 import hrd.com.hrms.dto.request.PositionRequest;
 import hrd.com.hrms.dto.response.PositionResponse;
+import hrd.com.hrms.exception.ResourceNotFoundException;
+import hrd.com.hrms.mapper.PositionMapper;
+import hrd.com.hrms.model.Department;
 import hrd.com.hrms.model.Position;
+import hrd.com.hrms.repository.DepartmentRepository;
 import hrd.com.hrms.repository.PositionRepository;
 import hrd.com.hrms.service.PositionService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class PositionServiceImpl implements PositionService {
 
     private final PositionRepository positionRepository;
+    private final DepartmentRepository departmentRepository;
+    private final PositionMapper positionMapper;
+
+    public PositionServiceImpl(PositionRepository positionRepository, DepartmentRepository departmentRepository, PositionMapper positionMapper) {
+        this.positionRepository = positionRepository;
+        this.departmentRepository = departmentRepository;
+        this.positionMapper = positionMapper;
+    }
 
     @Override
-    @Transactional
     public PositionResponse createPosition(PositionRequest request) {
-        Position position = new Position();
-        position.setId(UUID.randomUUID());
-        position.setTitle(request.getTitle());
-        position.setDepartmentId(request.getDepartmentId());
+        Department department = null;
+        if (request.getDepartmentId() != null) {
+            department = departmentRepository.findById(request.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department linked to position not found"));
+        }
 
-        Position saved = positionRepository.save(position);
-        return mapToResponse(saved);
+        Position position = Position.builder()
+                .title(request.getTitle())
+                .department(department)
+                .build();
+        return positionMapper.toResponse(positionRepository.save(position));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public PositionResponse getPositionById(UUID id) {
-        Position position = positionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Position not found with ID: " + id));
-        return mapToResponse(position);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<PositionResponse> getAllPositions() {
-        return positionRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
     public PositionResponse updatePosition(UUID id, PositionRequest request) {
         Position position = positionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Position not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + id));
+
+        if (request.getDepartmentId() != null) {
+            Department department = departmentRepository.findById(request.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department linked to position not found"));
+            position.setDepartment(department);
+        } else {
+            position.setDepartment(null);
+        }
 
         position.setTitle(request.getTitle());
-        position.setDepartmentId(request.getDepartmentId());
-
-        Position updated = positionRepository.save(position);
-        return mapToResponse(updated);
+        return positionMapper.toResponse(positionRepository.save(position));
     }
 
     @Override
-    @Transactional
-    public void deletePosition(UUID id) {
-        if (!positionRepository.existsById(id)) {
-            throw new RuntimeException("Position not found with ID: " + id);
-        }
-        positionRepository.deleteById(id);
+    public Page<PositionResponse> getAllPositions(Pageable pageable) {
+        return positionRepository.findAll(pageable).map(positionMapper::toResponse);
     }
 
-    private PositionResponse mapToResponse(Position position) {
-        PositionResponse response = new PositionResponse();
-        response.setId(position.getId());
-        response.setTitle(position.getTitle());
-        response.setDepartmentId(position.getDepartmentId());
-        return response;
+    @Override
+    public PositionResponse getPositionById(UUID id) {
+        return positionRepository.findById(id)
+                .map(positionMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + id));
+    }
+
+    @Override
+    public void deletePosition(UUID id) {
+        Position position = positionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + id));
+        positionRepository.delete(position);
     }
 }

@@ -1,33 +1,38 @@
 package hrd.com.hrms.model;
 
-import lombok.Data;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-
+import jakarta.persistence.*;
+import lombok.*;
 import java.util.UUID;
 
+@Entity
+@Table(name = "users")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @NotBlank(message = "Username is required")
-    @Size(min = 4, max = 50, message = "Username must be between 4 and 50 characters")
+    @Column(unique = true, nullable = false, length = 50)
     private String username;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Please provide a valid email address")
+    @Column(unique = true, nullable = false, length = 100)
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters long")
+    @Column(nullable = false)
     private String password;
 
-    @NotNull(message = "Active status must be specified")
-    private Boolean isActive = true;
+    @Column(name = "is_active")
+    private boolean isActive = true;
 
-    @NotNull(message = "Role ID is required")
-    private UUID roleId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
+    private Role role;
+
+    // Fixed: Cleanly return a String for your frontend name display
+    public String getName() {
+        return this.username;
+    }
 }

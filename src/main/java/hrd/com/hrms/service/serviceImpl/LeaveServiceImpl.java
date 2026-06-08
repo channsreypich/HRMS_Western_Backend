@@ -2,75 +2,90 @@ package hrd.com.hrms.service.serviceImpl;
 
 import hrd.com.hrms.dto.request.LeaveRequest;
 import hrd.com.hrms.dto.response.LeaveResponse;
+import hrd.com.hrms.enums.LeaveStatus;
+import hrd.com.hrms.exception.BadRequestException;
+import hrd.com.hrms.exception.ResourceNotFoundException;
+import hrd.com.hrms.mapper.LeaveMapper;
+import hrd.com.hrms.model.Employee;
 import hrd.com.hrms.model.Leave;
+import hrd.com.hrms.repository.EmployeeRepository;
 import hrd.com.hrms.repository.LeaveRepository;
 import hrd.com.hrms.service.LeaveService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class LeaveServiceImpl implements LeaveService {
+
     private final LeaveRepository leaveRepository;
+    private final EmployeeRepository employeeRepository;
+    private final LeaveMapper leaveMapper;
 
-    @Override
-    public LeaveResponse requestLeave(LeaveRequest request) {
-        return null;
+    public LeaveServiceImpl(LeaveRepository leaveRepository, EmployeeRepository employeeRepository, LeaveMapper leaveMapper) {
+        this.leaveRepository = leaveRepository;
+        this.employeeRepository = employeeRepository;
+        this.leaveMapper = leaveMapper;
     }
 
     @Override
-    public LeaveResponse updateLeaveStatus(UUID id, String status) {
-        return null;
+    public LeaveResponse createLeaveRequest(LeaveRequest request) {
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            throw new BadRequestException("End date cannot occur before start date.");
+        }
+
+        Employee employee = employeeRepository.findById(request.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee record not found."));
+
+        Leave leave = Leave.builder()
+                .employee(employee)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .reason(request.getReason())
+                .status(LeaveStatus.PENDING)
+                .build();
+
+        return leaveMapper.toResponse(leaveRepository.save(leave));
     }
 
     @Override
-    public List<LeaveResponse> getEmployeeLeaveHistory(UUID employeeId) {
-        return List.of();
-    }
+    public LeaveResponse updateLeaveStatus(UUID id, LeaveStatus status) {
+        Leave leave = leaveRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found matching id: " + id));
 
-    @Override
-    public List<LeaveResponse> getPendingLeaveRequests() {
-        return List.of();
-    }
-
-    @Override
-    public LeaveResponse applyLeave(hrd.com.hrms.dto.request.LeaveRequest request) {
-        Leave leave = new Leave();
-        leave.setId(UUID.randomUUID());
-        leave.setEmployeeId(request.getEmployeeId());
-        leave.setLeaveType(request.getLeaveType());
-        leave.setStartDate(request.getStartDate());
-        leave.setEndDate(request.getEndDate());
-        leave.setReason(request.getReason());
-        leave.setStatus("PENDING");
-        return mapToResponse(leaveRepository.save(leave));
-    }
-
-    @Override
-    public LeaveResponse updateStatus(UUID leaveId, String status) {
-        Leave leave = leaveRepository.findById(leaveId)
-                .orElseThrow(() -> new RuntimeException("Request target reference missing"));
         leave.setStatus(status);
-        return mapToResponse(leaveRepository.save(leave));
+        return leaveMapper.toResponse(leaveRepository.save(leave));
     }
 
     @Override
-    public List<LeaveResponse> getAllLeaveRequests() {
-        return leaveRepository.findAll().stream().map(this::mapToResponse).collect(Collectors.toList());
+    public LeaveResponse getLeaveById(UUID id) {
+        return leaveRepository.findById(id)
+                .map(leaveMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found matching id: " + id));
     }
 
-    private LeaveResponse mapToResponse(Leave model) {
-        LeaveResponse res = new LeaveResponse();
-        res.setId(model.getId());
-        res.setEmployeeId(model.getEmployeeId());
-        res.setLeaveType(model.getLeaveType());
-        res.setStartDate(model.getStartDate());
-        res.setEndDate(model.getEndDate());
-        res.setReason(model.getReason());
-        res.setStatus(model.getStatus());
-        return res;
+    @Override
+    public Page<LeaveResponse> getAllLeaveRequests(Pageable pageable) {
+        return leaveRepository.findAll(pageable).map(leaveMapper::toResponse);
+    }
+
+    @Override
+    public Page<LeaveResponse> getLeavesByStatus(LeaveStatus status, Pageable pageable) {
+        return leaveRepository.findByStatus(status, pageable).map(leaveMapper::toResponse);
+    }
+
+    @Override
+    public Page<LeaveResponse> getEmployeeLeaveHistory(UUID employeeId, Pageable pageable) {
+        return leaveRepository.findByEmployeeId(employeeId, pageable).map(leaveMapper::toResponse);
+    }
+
+    @Override
+    public void deleteLeave(UUID id) {
+        Leave leave = leaveRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found matching id: " + id));
+        leaveRepository.delete(leave);
     }
 }

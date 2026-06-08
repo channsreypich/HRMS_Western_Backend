@@ -1,42 +1,45 @@
 package hrd.com.hrms.model;
 
-import lombok.Data;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PastOrPresent;
+import jakarta.persistence.*;
+import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+@Entity
+@Table(name = "payrolls")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Payroll {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @NotNull(message = "Employee ID is required")
-    private UUID employeeId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "employee_id", nullable = false)
+    private Employee employee;
 
-    @NotNull(message = "Pay period start date is required")
+    @Column(name = "pay_period_start")
     private LocalDate payPeriodStart;
 
-    @NotNull(message = "Pay period end date is required")
+    @Column(name = "pay_period_end")
     private LocalDate payPeriodEnd;
 
-    @NotNull(message = "Basic salary is required")
-    @DecimalMin(value = "0.00", message = "Basic salary cannot be negative")
-    private BigDecimal basicSalary;
-
-    @DecimalMin(value = "0.00", message = "Allowances cannot be negative")
-    private BigDecimal allowances = BigDecimal.ZERO;
-
-    @DecimalMin(value = "0.00", message = "Deductions cannot be negative")
-    private BigDecimal deductions = BigDecimal.ZERO;
-
-    @NotNull(message = "Net pay is required")
-    @DecimalMin(value = "0.00", message = "Net pay cannot be negative")
-    private BigDecimal netPay;
-
-    @PastOrPresent(message = "Payment date cannot be in the future")
+    @Column(name = "payment_date")
     private LocalDate paymentDate;
+
+    @Column(name = "basic_salary", nullable = false)
+    private double basicSalary;
+
+    @Column(nullable = false)
+    private double allowances;
+
+    @Column(nullable = false)
+    private double deductions;
+
+    @Column(name = "net_pay", nullable = false)
+    private double netPay;
 }

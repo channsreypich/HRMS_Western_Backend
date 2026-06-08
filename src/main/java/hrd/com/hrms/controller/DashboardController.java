@@ -1,28 +1,36 @@
 package hrd.com.hrms.controller;
 
 import hrd.com.hrms.common.ApiResponse;
-import lombok.RequiredArgsConstructor;
+import hrd.com.hrms.service.DashboardService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class DashboardController {
 
-    @GetMapping("/summary")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboardSummary() {
-        Map<String, Object> statistics = new HashMap<>();
-        statistics.put("totalEmployees", 120);
-        statistics.put("activeLeavesToday", 4);
-        statistics.put("pendingLeaveRequests", 8);
-        statistics.put("attendanceRateToday", "94.5%");
+    private final DashboardService dashboardService;
 
-        return ResponseEntity.ok(new ApiResponse<>("Dashboard analytical context populated", statistics, true, java.time.LocalDateTime.now()));
+    public DashboardController(DashboardService dashboardService) {
+        this.dashboardService = dashboardService;
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getSummaryMetrics() {
+        Map<String, Object> summary = dashboardService.getMetricsSummary();
+        return ResponseEntity.ok(new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Dashboard data metrics compiled successfully",
+                summary
+        ));
     }
 }

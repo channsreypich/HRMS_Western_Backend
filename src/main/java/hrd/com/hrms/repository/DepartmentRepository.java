@@ -1,26 +1,13 @@
 package hrd.com.hrms.repository;
 
 import hrd.com.hrms.model.Department;
-
-import java.util.Arrays;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.Optional;
 import java.util.UUID;
 
-public class DepartmentRepository {
-    public Department save(Department department) {
-        return null;
-    }
-
-    public <T> ScopedValue<T> findById(UUID id) {
-        return null;
-    }
-
-    public Arrays findAll() {
-        return null;
-    }
-
-    public boolean existsById(UUID id) {
-    }
-
-    public void deleteById(UUID id) {
-    }
+@Repository
+public interface DepartmentRepository extends JpaRepository<Department, UUID> {
+    Optional<Department> findByCode(String code);
+    boolean existsByCode(String code);
 }

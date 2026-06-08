@@ -1,34 +1,26 @@
 package hrd.com.hrms.controller;
 
 import hrd.com.hrms.common.ApiResponse;
-import hrd.com.hrms.model.User;
-import hrd.com.hrms.repository.UserRepository;
+import hrd.com.hrms.dto.response.UserResponse;
+import hrd.com.hrms.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return ResponseEntity.ok(new ApiResponse<>("Users list successfully aggregated", users, true, java.time.LocalDateTime.now()));
-    }
-
-    @PatchMapping("/{id}/toggle-status")
-    public ResponseEntity<ApiResponse<User>> toggleUserStatus(@PathVariable UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Target user resource reference missing"));
-        user.setIsActive(!user.getIsActive());
-        User updatedUser = userRepository.save(user);
-        return ResponseEntity.ok(new ApiResponse<>("User availability status updated contextually", updatedUser, true, java.time.LocalDateTime.now()));
+    @GetMapping("/users-list")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getUsersList() {
+        List<UserResponse> users = userService.getAllUsers();
+        return ResponseEntity.ok(ApiResponse.success(users, "User list retrieved successfully"));
     }
 }

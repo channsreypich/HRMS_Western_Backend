@@ -14,13 +14,11 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         final String securitySchemeName = "bearerAuth";
-
         return new OpenAPI()
                 .info(new Info()
-                        .title("HRMS Application API")
-                        .version("1.0")
-                        .description("Backend REST APIs for the Human Resource Management System."))
-                // Adds JWT / Bearer Token support directly to the Swagger UI
+                        .title("HRMS Enterprise API Ecosystem")
+                        .version("1.0.0")
+                        .description("Backend REST API services for Human Resource Management System"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
                         .addSecuritySchemes(securitySchemeName,

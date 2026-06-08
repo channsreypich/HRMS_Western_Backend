@@ -1,30 +1,27 @@
 package hrd.com.hrms.controller;
 
+import hrd.com.hrms.common.ApiResponse;
 import hrd.com.hrms.dto.request.LoginRequest;
-import hrd.com.hrms.dto.request.RegisterRequest;
-import hrd.com.hrms.dto.response.RegisterResponse;
-import hrd.com.hrms.dto.response.LoginResponse;
-import hrd.com.hrms.service.UserService;
-import lombok.RequiredArgsConstructor;
+import hrd.com.hrms.dto.response.AuthResponse;
+import hrd.com.hrms.service.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
-
-    @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return new ResponseEntity<>(userService.registerUser(request), HttpStatus.CREATED);
-    }
+    private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(userService.loginUser(request));
+    public ResponseEntity<ApiResponse<AuthResponse>> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        AuthResponse authResponse = authService.login(loginRequest);
+        return ResponseEntity.ok(ApiResponse.success(authResponse, "Login successful"));
     }
 }

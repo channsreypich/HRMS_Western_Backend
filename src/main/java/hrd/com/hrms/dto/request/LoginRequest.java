@@ -1,13 +1,13 @@
 package hrd.com.hrms.dto.request;
 
-import lombok.Data;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-@Data
-public class LoginRequest {
-    @NotBlank(message = "Username or email is required")
-    private String usernameOrEmail;
+public record LoginRequest(
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        String email,
 
-    @NotBlank(message = "Password is required")
-    private String password;
-}
+        @NotBlank(message = "Password is required")
+        String password
+) {}

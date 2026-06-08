@@ -2,78 +2,63 @@ package hrd.com.hrms.service.serviceImpl;
 
 import hrd.com.hrms.dto.request.DepartmentRequest;
 import hrd.com.hrms.dto.response.DepartmentResponse;
+import hrd.com.hrms.exception.ResourceNotFoundException;
+import hrd.com.hrms.mapper.DepartmentMapper;
 import hrd.com.hrms.model.Department;
 import hrd.com.hrms.repository.DepartmentRepository;
 import hrd.com.hrms.service.DepartmentService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
+    private final DepartmentMapper departmentMapper;
+
+    public DepartmentServiceImpl(DepartmentRepository departmentRepository, DepartmentMapper departmentMapper) {
+        this.departmentRepository = departmentRepository;
+        this.departmentMapper = departmentMapper;
+    }
 
     @Override
-    @Transactional
     public DepartmentResponse createDepartment(DepartmentRequest request) {
-        Department department = new Department();
-        department.setId(UUID.randomUUID());
-        department.setName(request.getName());
-        department.setDescription(request.getDescription());
-
-        Department saved = departmentRepository.save(department);
-        return mapToResponse(saved);
+        Department department = Department.builder()
+                .code(request.getCode())
+                .name(request.getName())
+                .build();
+        return departmentMapper.toResponse(departmentRepository.save(department));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public DepartmentResponse getDepartmentById(UUID id) {
-        Department department = (Department) departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found with ID: " + id));
-        return mapToResponse(department);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<DepartmentResponse> getAllDepartments() {
-        return departmentRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
     public DepartmentResponse updateDepartment(UUID id, DepartmentRequest request) {
-        Department department = (Department) departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found with ID: " + id));
-
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
+        department.setCode(request.getCode());
         department.setName(request.getName());
-        department.setDescription(request.getDescription());
-
-        Department updated = departmentRepository.save(department);
-        return mapToResponse(updated);
+        return departmentMapper.toResponse(departmentRepository.save(department));
     }
 
     @Override
-    @Transactional
-    public void deleteDepartment(UUID id) {
-        if (!departmentRepository.existsById(id)) {
-            throw new RuntimeException("Department not found with ID: " + id);
-        }
-        departmentRepository.deleteById(id);
+    public Page<DepartmentResponse> getAllDepartments(Pageable pageable) {
+        return departmentRepository.findAll(pageable).map(departmentMapper::toResponse);
     }
 
-    private DepartmentResponse mapToResponse(Department department) {
-        DepartmentResponse response = new DepartmentResponse();
-        response.setId(department.getId());
-        response.setName(department.getName());
-        response.setDescription(department.getDescription());
-        return response;
+    @Override
+    public DepartmentResponse getDepartmentById(UUID id) {
+        return departmentRepository.findById(id)
+                .map(departmentMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
+    }
+
+    @Override
+    public void deleteDepartment(UUID id) {
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
+        departmentRepository.delete(department);
     }
 }
