@@ -2,6 +2,9 @@ package hrd.com.hrms.dto.request;
 
 import lombok.Data;
 import jakarta.validation.constraints.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -33,4 +36,8 @@ public class EmployeeRequest {
 
     @NotNull(message = "Position ID is required")
     private UUID positionId;
+    private String phone;
+    private String status;
+    private LocalDate hireDate;
+    private BigDecimal baseSalary;
 }

@@ -17,6 +17,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    // Add this field
+    @Column(unique = true, nullable = false, length = 50)
+    private String username;
+
     @Column(name = "first_name", nullable = false, length = 50)
     private String firstName;
 

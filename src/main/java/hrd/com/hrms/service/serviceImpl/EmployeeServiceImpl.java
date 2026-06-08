@@ -2,6 +2,7 @@ package hrd.com.hrms.service.serviceImpl;
 
 import hrd.com.hrms.dto.request.EmployeeRequest;
 import hrd.com.hrms.dto.response.EmployeeResponse;
+import hrd.com.hrms.dto.response.EmployeeDetailResponse; // Added for screen synchronization
 import hrd.com.hrms.exception.BadRequestException;
 import hrd.com.hrms.exception.ResourceNotFoundException;
 import hrd.com.hrms.mapper.EmployeeMapper;
@@ -71,6 +72,10 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .lastName(request.getLastName())
                 .department(dept)
                 .position(pos)
+                .phone(request.getPhone()) // Maps from view inputs
+                .status(request.getStatus() != null ? request.getStatus().toLowerCase() : "active")
+                .hireDate(request.getHireDate())
+                .baseSalary(request.getBaseSalary())
                 .build();
 
         return employeeMapper.toResponse(employeeRepository.save(employee));
@@ -88,6 +93,12 @@ public class EmployeeServiceImpl implements EmployeeService {
         emp.setLastName(request.getLastName());
         emp.setDepartment(dept);
         emp.setPosition(pos);
+        emp.setPhone(request.getPhone());
+        if (request.getStatus() != null) {
+            emp.setStatus(request.getStatus().toLowerCase());
+        }
+        emp.setHireDate(request.getHireDate());
+        emp.setBaseSalary(request.getBaseSalary());
 
         User user = emp.getUser();
         user.setEmail(request.getEmail());
@@ -99,7 +110,6 @@ public class EmployeeServiceImpl implements EmployeeService {
             user.setRole(role);
         }
 
-        // Only update the password when a new one is explicitly supplied
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
@@ -108,15 +118,39 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<EmployeeResponse> getAllEmployees(Pageable pageable) {
         return employeeRepository.findAll(pageable).map(employeeMapper::toResponse);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public EmployeeResponse getEmployeeById(UUID id) {
         return employeeRepository.findById(id)
                 .map(employeeMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+    }
+
+    // ── Added Custom Profile Breakdown for EmployeeDetail.vue Layout ──
+    @Override
+    @Transactional(readOnly = true)
+    public EmployeeDetailResponse getEmployeeDetailsById(UUID id) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee profile info not found for ID: " + id));
+
+        return EmployeeDetailResponse.builder()
+                .id(employee.getId())
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .phone(employee.getPhone())
+                .status(employee.getStatus() != null ? employee.getStatus().toLowerCase() : "inactive")
+                .hireDate(employee.getHireDate())
+                .baseSalary(employee.getBaseSalary())
+                // Safe checks to avoid lazy loading/NPE crashes
+                .email(employee.getUser() != null ? employee.getUser().getEmail() : "N/A")
+                .departmentName(employee.getDepartment() != null ? employee.getDepartment().getName() : null)
+                .positionTitle(employee.getPosition() != null ? employee.getPosition().getName() : null)
+                .build();
     }
 
     @Override

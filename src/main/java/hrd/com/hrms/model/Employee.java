@@ -34,4 +34,15 @@ public class Employee {
     private Position position;
     @Column(name = "employee_code", unique = true, length = 50)
     private String employeeCode;
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "status", length = 20)
+    private String status; // e.g., "active", "inactive"
+
+    @Column(name = "hire_date")
+    private java.time.LocalDate hireDate;
+
+    @Column(name = "base_salary", precision = 10, scale = 2)
+    private java.math.BigDecimal baseSalary;
 }
