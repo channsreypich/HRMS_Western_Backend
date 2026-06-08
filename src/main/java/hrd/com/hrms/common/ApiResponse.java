@@ -25,4 +25,10 @@ public class ApiResponse<T> {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+    public ApiResponse(int status, String message, T data) {
+        this.success = true; // Assuming OK status means success
+        this.message = message;
+        this.data = data;
+        this.timestamp = LocalDateTime.now();
+    }
 }
