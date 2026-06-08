@@ -13,6 +13,7 @@ import java.util.UUID;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     Optional<Employee> findByUserId(UUID userId);
+    Optional<Employee> findByEmployeeCode(String employeeCode);
 
     @Query("SELECT e FROM Employee e WHERE " +
             "LOWER(e.firstName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +

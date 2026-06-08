@@ -1,97 +1,109 @@
 package hrd.com.hrms.service.serviceImpl;
 
-import hrd.com.hrms.dto.request.AttendanceRequest;
 import hrd.com.hrms.dto.response.AttendanceResponse;
 import hrd.com.hrms.enums.AttendanceStatus;
-import hrd.com.hrms.exception.BadRequestException;
 import hrd.com.hrms.exception.ResourceNotFoundException;
-import hrd.com.hrms.mapper.AttendanceMapper;
 import hrd.com.hrms.model.Attendance;
 import hrd.com.hrms.model.Employee;
 import hrd.com.hrms.repository.AttendanceRepository;
 import hrd.com.hrms.repository.EmployeeRepository;
 import hrd.com.hrms.service.AttendanceService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.List;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
-    private final AttendanceMapper attendanceMapper;
 
-    public AttendanceServiceImpl(AttendanceRepository attendanceRepository,
-                                 EmployeeRepository employeeRepository,
-                                 AttendanceMapper attendanceMapper) {
-        this.attendanceRepository = attendanceRepository;
-        this.employeeRepository = employeeRepository;
-        this.attendanceMapper = attendanceMapper;
+    @Override
+    @Transactional(readOnly = true)
+    public List<AttendanceResponse> getAllAttendanceRecords() {
+        return attendanceRepository.findAll().stream()
+                .map(this::mapToAttendanceResponse)
+                .toList();
     }
 
     @Override
-    public AttendanceResponse processScan(AttendanceRequest request) {
-        Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Employee record not found with UUID: " + request.getEmployeeId()));
+    @Transactional
+    public AttendanceResponse processScanAttendance(String employeeCode, String scanType, MultipartFile selfie) {
+        // 1. Locate the employee using their unique Employee Code (e.g., EMP001) sent from Vue local storage
+        // Assumes your EmployeeRepository contains a custom finder method: findByEmployeeCode(String code)
+        Employee employee = employeeRepository.findByEmployeeCode(employeeCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with code: " + employeeCode));
 
         LocalDate today = LocalDate.now();
-        Optional<Attendance> existingAttendance = attendanceRepository.findByEmployeeAndDate(employee, today);
+        LocalDateTime now = LocalDateTime.now();
 
-        Attendance trackingRecord;
-
-        if (existingAttendance.isEmpty()) {
-            // Smart Logic: First scan of the day -> CHECK-IN
-            trackingRecord = Attendance.builder()
-                    .employee(employee)
-                    .date(today)
-                    .checkIn(LocalDateTime.now())
-                    .status(AttendanceStatus.PRESENT) // You can inject cutoff logic here for LATE status
-                    .scanType(request.getScanType())
-                    .build();
-        } else {
-            // Smart Logic: Second scan of the day -> CHECK-OUT
-            trackingRecord = existingAttendance.get();
-            if (trackingRecord.getCheckOut() != null) {
-                throw new BadRequestException("Employee has already checked out for today.");
-            }
-            trackingRecord.setCheckOut(LocalDateTime.now());
+        // Optional: If you want to handle saving the image to a cloud or local folder structure:
+        if (selfie != null && !selfie.isEmpty()) {
+            // String fileUrl = fileStorageService.save(selfie);
+            // You can record this URL on your attendance domain entity if needed!
         }
 
-        Attendance savedRecord = attendanceRepository.save(trackingRecord);
-        return attendanceMapper.toResponse(savedRecord);
+        Attendance attendance;
+
+        // 2. Handle Check-In / Check-Out logic based on context route type
+        if ("OUT".equalsIgnoreCase(scanType)) {
+            // Find today's existing check-in record to update with a check-out time
+            attendance = attendanceRepository.findByEmployeeAndDate(employee, today)
+                    .orElseThrow(() -> new ResourceNotFoundException("No check-in record found for this employee today."));
+
+            attendance.setCheckOut(now);
+        } else {
+            // Default to "IN" scan: Create a fresh attendance log entry for today
+
+            // Check if they are late (comparing against 08:15 AM today)
+            LocalDateTime lateThreshold = today.atTime(8, 15);
+            AttendanceStatus status = now.isAfter(lateThreshold) ? AttendanceStatus.LATE : AttendanceStatus.PRESENT;
+
+            attendance = Attendance.builder()
+                    .employee(employee)
+                    .date(today)
+                    .checkIn(now)
+                    .status(status)
+                    .build();
+        }
+
+        Attendance savedRecord = attendanceRepository.save(attendance);
+
+        // Pass context tracking back out to mapping so DTO accurately reflects the operation done
+        AttendanceResponse response = mapToAttendanceResponse(savedRecord);
+        response.setScanType(scanType.toUpperCase());
+        return response;
     }
 
-    @Override
-    public AttendanceResponse getAttendanceById(UUID id) {
-        return attendanceRepository.findById(id)
-                .map(attendanceMapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Attendance record not found with id: " + id));
-    }
+    private AttendanceResponse mapToAttendanceResponse(Attendance attendance) {
+        Employee emp = attendance.getEmployee();
 
-    @Override
-    public Page<AttendanceResponse> getEmployeeAttendanceHistory(UUID employeeId, Pageable pageable) {
-        return attendanceRepository.findByEmployeeId(employeeId, pageable)
-                .map(attendanceMapper::toResponse);
-    }
+        // 1. Safely combine first name and last name into a single employeeName String
+        String fullName = "Unknown Employee";
+        if (emp != null) {
+            String firstName = emp.getFirstName() != null ? emp.getFirstName() : "";
+            String lastName = emp.getLastName() != null ? emp.getLastName() : "";
+            fullName = (firstName + " " + lastName).trim();
+            if (fullName.isEmpty()) {
+                fullName = "Unknown Employee";
+            }
+        }
 
-    @Override
-    public Page<AttendanceResponse> getAllAttendanceLogs(Pageable pageable) {
-        return attendanceRepository.findAll(pageable)
-                .map(attendanceMapper::toResponse);
-    }
-
-    @Override
-    public void deleteAttendance(UUID id) {
-        Attendance attendance = attendanceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Attendance record not found with id: " + id));
-        attendanceRepository.delete(attendance);
+        // 2. Use the Lombok Builder to match the specific DTO types (LocalDateTime directly)
+        return AttendanceResponse.builder()
+                .id(attendance.getId())
+                .employeeId(emp != null ? emp.getId() : null)
+                .employeeName(fullName)
+                .date(attendance.getDate())
+                .checkIn(attendance.getCheckIn())
+                .checkOut(attendance.getCheckOut())
+                .status(attendance.getStatus() != null ? attendance.getStatus() : AttendanceStatus.PRESENT)
+                .build();
     }
 }

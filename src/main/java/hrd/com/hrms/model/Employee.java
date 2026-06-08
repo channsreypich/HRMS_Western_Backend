@@ -32,4 +32,6 @@ public class Employee {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "position_id")
     private Position position;
+    @Column(name = "employee_code", unique = true, length = 50)
+    private String employeeCode;
 }

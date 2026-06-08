@@ -2,6 +2,7 @@ package hrd.com.hrms.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -35,7 +36,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // 1. Specific rules MUST go first
-                        .requestMatchers("/api/auth/users-list").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/auth/users-list").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register-hr").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/auth/user-status/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/auth/user/**").hasRole("ADMIN")
 
                         // 2. More generic permits/wildcards go second
                         .requestMatchers(
