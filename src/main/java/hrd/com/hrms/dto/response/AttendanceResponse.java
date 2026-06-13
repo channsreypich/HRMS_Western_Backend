@@ -14,9 +14,14 @@ public class AttendanceResponse {
     private UUID id;
     private UUID employeeId;
     private String employeeName;
+    private String firstName;
+    private String lastName;
+    private String employeeCode;
+    private String departmentName;
     private LocalDate date;
     private LocalDateTime checkIn;
     private LocalDateTime checkOut;
     private AttendanceStatus status;
     private String scanType;
+    private String selfieUrl;
 }

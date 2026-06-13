@@ -43,18 +43,27 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new BadRequestException("Password is required when creating an employee account.");
         }
 
-        Role role = roleRepository.findById(request.getRoleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role configuration not found"));
-        Department dept = departmentRepository.findById(request.getDepartmentId()).orElse(null);
-        Position pos = positionRepository.findById(request.getPositionId()).orElse(null);
+        // Role is optional from the UI; default new employees to ROLE_EMPLOYEE
+        Role role = (request.getRoleId() != null)
+                ? roleRepository.findById(request.getRoleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"))
+                : roleRepository.findByName(hrd.com.hrms.enums.RoleName.ROLE_EMPLOYEE)
+                    .orElseThrow(() -> new ResourceNotFoundException("Default ROLE_EMPLOYEE not found"));
+        Department dept = departmentRepository.findById(request.getDepartmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+        Position pos = positionRepository.findById(request.getPositionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Position not found"));
 
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(role)
                 .isActive(true)
                 .build();
+        String generatedCode = generateEmployeeCode();
 
         Employee employee = Employee.builder()
                 .user(user)
@@ -62,6 +71,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .lastName(request.getLastName())
                 .department(dept)
                 .position(pos)
+                .employeeCode(generatedCode)
                 .phone(request.getPhone())
                 .status(request.getStatus() != null ? request.getStatus().toLowerCase() : "active")
                 .hireDate(request.getHireDate())
@@ -69,6 +79,21 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
 
         return employeeMapper.toResponse(employeeRepository.save(employee));
+    }
+
+    // Produces the next clean sequential code (EMP-001, EMP-002, ...).
+    // Only well-formed short codes feed the counter, so legacy timestamp codes
+    // are ignored and the new code never collides with the seeded EMP-00x set.
+    private String generateEmployeeCode() {
+        int max = employeeRepository.findAll().stream()
+                .map(Employee::getEmployeeCode)
+                .filter(c -> c != null && c.matches("(?i)EMP-?\\d{1,5}"))
+                .map(c -> c.replaceAll("\\D", ""))
+                .filter(s -> !s.isEmpty())
+                .mapToInt(Integer::parseInt)
+                .max()
+                .orElse(0);
+        return String.format("EMP-%03d", max + 1);
     }
 
     @Override
@@ -93,6 +118,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         User user = emp.getUser();
         user.setEmail(request.getEmail());
         user.setUsername(request.getUsername());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
 
         if (request.getRoleId() != null) {
             Role role = roleRepository.findById(request.getRoleId())

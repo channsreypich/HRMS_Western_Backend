@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,4 +18,7 @@ public interface LeaveRepository extends JpaRepository<Leave, UUID> {
 
     Page<Leave> findByStatus(LeaveStatus status, Pageable pageable);
     long countByStatus(LeaveStatus status);
+
+    // Leaves of a given status created within a time window (used for dashboard trends)
+    long countByStatusAndCreatedAtBetween(LeaveStatus status, LocalDateTime start, LocalDateTime end);
 }

@@ -35,7 +35,7 @@ public class UserController {
     @PatchMapping("/user-status/{id}")
     public ResponseEntity<ApiResponse<UserResponse>> changeStatus(
             @PathVariable UUID id,
-            @RequestBody StatusUpdateRequest request) {
+            @Valid @RequestBody StatusUpdateRequest request) {
         UserResponse response = userService.toggleStatus(id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Operator operational access status modified"));
     }

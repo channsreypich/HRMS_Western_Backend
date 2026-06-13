@@ -11,6 +11,7 @@ public class PositionMapper {
         return PositionResponse.builder()
                 .id(position.getId())
                 .title(position.getTitle())
+                .baseSalary(position.getBaseSalary())
                 .departmentId(position.getDepartment() != null ? position.getDepartment().getId() : null)
                 .departmentName(position.getDepartment() != null ? position.getDepartment().getName() : "N/A")
                 .build();

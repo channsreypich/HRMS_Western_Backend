@@ -40,6 +40,8 @@ public class Leave {
 
     private String documentPath;
 
+    @org.hibernate.annotations.CreationTimestamp
     @Column(nullable = false, updatable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }

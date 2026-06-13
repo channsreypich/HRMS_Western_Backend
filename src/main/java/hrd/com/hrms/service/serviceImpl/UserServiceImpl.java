@@ -36,21 +36,37 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponse registerHR(RegisterRequest request) {
-        // Resolve HR role entity
-        Role hrRole = roleRepository.findByName(RoleName.ROLE_HR)
-                .orElseThrow(() -> new ResourceNotFoundException("Role HR not found initialization setup"));
+        // Resolve the requested role (defaults to HR when none supplied)
+        RoleName roleName = resolveRoleName(request.role());
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role " + roleName + " not found in initialization setup"));
 
         User newUser = User.builder()
                 .firstName(request.first_name())
                 .lastName(request.last_name())
+                .username(request.username())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .role(hrRole)
+                .role(role)
                 .isActive(true)
                 .build();
 
         User savedUser = userRepository.save(newUser);
         return mapToUserResponse(savedUser);
+    }
+
+    private RoleName resolveRoleName(String role) {
+        if (role == null || role.isBlank()) {
+            return RoleName.ROLE_HR;
+        }
+        String normalized = role.trim().toUpperCase();
+        if (normalized.contains("ADMIN")) {
+            return RoleName.ROLE_ADMIN;
+        }
+        if (normalized.contains("EMPLOYEE")) {
+            return RoleName.ROLE_EMPLOYEE;
+        }
+        return RoleName.ROLE_HR;
     }
 
     @Override

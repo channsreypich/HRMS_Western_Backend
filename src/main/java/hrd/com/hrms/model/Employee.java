@@ -48,6 +48,10 @@ public class Employee {
     @Column(name = "base_salary", precision = 10, scale = 2)
     private java.math.BigDecimal baseSalary;
 
+    // Stored 128-d face descriptor (comma-separated floats) used for face verification on scan
+    @Column(name = "face_descriptor", columnDefinition = "TEXT")
+    private String faceDescriptor;
+
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

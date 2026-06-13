@@ -34,4 +34,7 @@ public class Attendance {
     private AttendanceStatus status;
 
     private String scanType;
+
+    // Stored path of the selfie captured at scan time (proof of attendance)
+    private String selfieUrl;
 }

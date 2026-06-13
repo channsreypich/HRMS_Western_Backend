@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "payrolls")
+@Table(name = "payroll")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -43,4 +43,9 @@ public class Payroll {
 
     @Column(precision = 19, scale = 2)
     private BigDecimal netPay;
+
+    // Payment lifecycle state: "draft" (generated, not yet paid) or "paid".
+    @Column(nullable = false)
+    @Builder.Default
+    private String status = "draft";
 }

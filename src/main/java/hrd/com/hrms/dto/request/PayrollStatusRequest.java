@@ -3,8 +3,8 @@ package hrd.com.hrms.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
-public record StatusUpdateRequest(
+public record PayrollStatusRequest(
         @NotBlank(message = "Status is required")
-        @Pattern(regexp = "(?i)Active|Inactive", message = "Status must be either 'Active' or 'Inactive'")
+        @Pattern(regexp = "(?i)draft|paid", message = "Status must be either 'draft' or 'paid'")
         String status
 ) {}

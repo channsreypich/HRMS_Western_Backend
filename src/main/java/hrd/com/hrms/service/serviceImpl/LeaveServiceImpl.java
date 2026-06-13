@@ -42,10 +42,12 @@ public class LeaveServiceImpl implements LeaveService {
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Employee record not found."));
         String documentPath = null;
-        try {
-            documentPath = fileStorageService.storeFile(file);
-        } catch (IOException e) {
-            throw new BadRequestException("Could not store file: " + e.getMessage());
+        if (file != null && !file.isEmpty()) {
+            try {
+                documentPath = fileStorageService.storeFile(file);
+            } catch (IOException e) {
+                throw new BadRequestException("Could not store file: " + e.getMessage());
+            }
         }
 
         Leave leave = Leave.builder()

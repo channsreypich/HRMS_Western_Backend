@@ -12,7 +12,10 @@ public class LeaveResponse {
     private UUID id;
     private UUID employeeId;
     private String employeeName;
+    private String firstName;
+    private String lastName;
     private String employeeCode;
+    private String departmentName;
     private String leaveType;
     private LocalDate startDate;
     private LocalDate endDate;

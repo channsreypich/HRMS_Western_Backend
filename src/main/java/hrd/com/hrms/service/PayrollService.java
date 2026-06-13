@@ -8,6 +8,11 @@ import java.util.UUID;
 
 public interface PayrollService {
     PayrollResponse calculateAndSavePayroll(PayrollRequest request);
+
+    // Generate draft payroll for every active employee for the given month ("YYYY-MM"); returns how many were created
+    int generateMonthlyPayroll(String paymentMonth);
+
+    PayrollResponse updatePayrollStatus(UUID id, String status);
     PayrollResponse getPayrollById(UUID id);
     Page<PayrollResponse> getEmployeePayrollHistory(UUID employeeId, Pageable pageable);
     Page<PayrollResponse> getAllPayrollRecords(Pageable pageable);

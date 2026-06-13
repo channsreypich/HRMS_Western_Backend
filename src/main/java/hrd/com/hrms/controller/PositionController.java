@@ -15,7 +15,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/positions")
-@CrossOrigin(origins = "*")
 public class PositionController {
 
     private final PositionService positionService;
@@ -25,7 +24,7 @@ public class PositionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<ApiResponse<PositionResponse>> create(@Valid @RequestBody PositionRequest request) {
         PositionResponse response = positionService.createPosition(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -43,13 +42,13 @@ public class PositionController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<ApiResponse<PositionResponse>> update(@PathVariable UUID id, @Valid @RequestBody PositionRequest request) {
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Position updated successfully", positionService.updatePosition(id, request)));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         positionService.deletePosition(id);
         return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Position removed successfully", null));
